@@ -13,17 +13,17 @@ typedef IO<T> = (IOStatus, T);
 class response {
   int statusCode;
   Map<String, List<String>> headers;
-  String data;
+  dynamic data;
 
   response(this.statusCode, this.headers, this.data);
 }
 
-class _request {
+class _Request {
   String host = '';
   Cookies cookies;
   Dio dio;
 
-  _request(this.host, this.cookies)
+  _Request(this.host, this.cookies)
       : dio = Dio(BaseOptions(
             baseUrl: "https://" + host,
             followRedirects: false,
@@ -47,8 +47,8 @@ class _request {
     }
     if (keys.containsAll(requestCookies ?? [])) {
       var cookieString = '';
-      requestCookies = requestCookies ?? keys.toList();
       requestCookies?.forEach((element) {
+        requestCookies = requestCookies ?? keys.toList();
         cookieString += element + '=' + cookie[element]! + ';';
       });
       options.headers!['Cookie'] = cookieString;
@@ -101,5 +101,31 @@ class _request {
             getResponse.data)
       ));
     }
+  }
+}
+
+class Request {
+  Map<String, _Request> _requests = {};
+  Cookies cookies;
+
+  Request(this.cookies);
+
+  Future<IO<response>> work(
+    String host,
+    String path,
+    RequestType type, {
+    Map<String, dynamic>? data,
+    PostDataType? postDataType,
+    List<String>? requestCookies,
+    Map<String, String>? headers,
+  }) async {
+    if (!_requests.containsKey(host)) {
+      _requests[host] = _Request(host, cookies);
+    }
+    return Future<IO<response>>.value(await _requests[host]!.work(path, type,
+        data: data,
+        postDataType: postDataType,
+        requestCookies: requestCookies,
+        headers: headers));
   }
 }
