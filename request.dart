@@ -47,6 +47,7 @@ class _request {
     }
     if (keys.containsAll(requestCookies ?? [])) {
       var cookieString = '';
+      requestCookies = requestCookies ?? keys.toList();
       requestCookies?.forEach((element) {
         cookieString += element + '=' + cookie[element]! + ';';
       });
