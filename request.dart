@@ -85,7 +85,7 @@ class _request {
           var info = element
               .split(';')[0]
               .split('='); // 目前需要的cookie均为会话中产生的本path下cookie，因此只取其值
-          cookies.add(info[0], info[1], host, 0);
+          cookies.add(info[0], info[1], host, double.maxFinite.toInt());
         });
       }
       return Future<IO<response>>.value((
