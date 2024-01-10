@@ -1,8 +1,11 @@
 import 'request.dart';
 
-enum WorkStatus { Success, GrammarError, WorkError, PromiseError }
+enum WorkStatus { Success, Interrupted ,GrammarError, WorkError, PromiseError }
+
+enum GetResultStatus { Success, PromiseError }
 
 typedef Work<T> = (WorkStatus, T);
+typedef GetResult<T> = (GetResultStatus, T);
 
 class AutoWorkParams {
   // 必要的请求配置
@@ -18,8 +21,8 @@ class AutoWorkParams {
   int promiseStatusCode = 200;
   AutoWorkParams Function(AutoWorkParams) Function(
       Map<String, List<String>> headers, dynamic data) transfer;
-  void Function(Map<String, List<String>> headers, dynamic data,
-      Map<String, dynamic> result)? getResult;
+  GetResult<Map<String, dynamic>> Function(Map<String, List<String>> headers,
+      dynamic data, Map<String, dynamic> result)? getResult;
 
   AutoWorkParams(
     this.host,
@@ -59,11 +62,16 @@ Future<Work<dynamic>> autoWork(
     } else if (ioStatus == IOStatus.Success) {
       if (response.statusCode == element.promiseStatusCode) {
         if (element.getResult != null) {
-          element.getResult!(
+          var (returnStatus, returnResult) = element.getResult!(
             response.headers,
             response.data,
             result,
           );
+          result = returnResult;
+          if (returnStatus != GetResultStatus.Success) {
+            status = (WorkStatus.Interrupted, null);
+            return null;
+          }
         }
         return element.transfer(response.headers, response.data);
       } else {
@@ -75,10 +83,5 @@ Future<Work<dynamic>> autoWork(
       return null;
     }
   });
-  if (status.$1 != WorkStatus.Success) {
-    return Future<Work<dynamic>>.value(status);
-  } else {
-    status = (WorkStatus.Success, result);
-    return status;
-  }
+  return Future<Work<dynamic>>.value(status);
 }
