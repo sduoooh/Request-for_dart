@@ -7,6 +7,20 @@ enum GetResultStatus { Success, PromiseError }
 typedef Work<T> = (WorkStatus, T);
 typedef GetResult<T> = (GetResultStatus, T);
 
+AutoWorkParams Function(AutoWorkParams) defaultTransfer(
+    Map<String, List<String>> headers,
+    dynamic data,
+    Map<String, dynamic> result) {
+  return (e) => e;
+}
+
+GetResult<Map<String, dynamic>> defaultGetResult(
+    Map<String, List<String>> headers,
+    dynamic data,
+    Map<String, dynamic> result) {
+  return (GetResultStatus.Success, result);
+}
+
 class AutoWorkParams {
   // 必要的请求配置
   String host;
@@ -24,58 +38,56 @@ class AutoWorkParams {
       dynamic data,
       Map<String, dynamic> result) transfer;
   GetResult<Map<String, dynamic>> Function(Map<String, List<String>> headers,
-      dynamic data, Map<String, dynamic> result)? getResult;
+      dynamic data, Map<String, dynamic> result) getResult;
 
   AutoWorkParams(
     this.host,
-    this.path,
-    this.transfer, {
-    this.promiseStatusCode = 200,
-    this.getResult,
-    this.type = RequestType.Get,
+    this.path, {
     this.data,
-    this.postDataType = PostDataType.Form,
-    //this.requestCookies,
     this.headers,
+    this.promiseStatusCode = 200,
+    this.type = RequestType.Get,
+    this.postDataType = PostDataType.Form,
+    this.transfer = defaultTransfer,
+    this.getResult = defaultGetResult,
   });
 }
 
 Future<Work<dynamic>> autoWork(
     List<AutoWorkParams> paramsList, Request request) async {
+
   Map<String, dynamic> result = {};
   var status = WorkStatus.Success;
+
   await paramsList.fold<dynamic>((a) => a, (previousValue, e) async {
     AutoWorkParams element = e;
     if ((await previousValue) == null) {
       return null;
     }
-      element = (await previousValue)(e);
+    element = (await previousValue)(e);
 
     var (ioStatus, response) = await request.work(
       element.host,
       element.path,
       element.type,
       data: element.data,
-      postDataType: element.postDataType,
-      //requestCookies: element.requestCookies,
       headers: element.headers,
+      postDataType: element.postDataType,
     );
     if (ioStatus == IOStatus.ParamError) {
       status = WorkStatus.GrammarError;
       return null;
     } else if (ioStatus == IOStatus.Success) {
       if (response.statusCode == element.promiseStatusCode) {
-        if (element.getResult != null) {
-          var (returnStatus, returnResult) = element.getResult!(
-            response.headers,
-            response.data,
-            result,
-          );
-          result = returnResult;
-          if (returnStatus != GetResultStatus.Success) {
-            status = WorkStatus.Interrupted;
-            return null;
-          }
+        var (returnStatus, returnResult) = element.getResult(
+          response.headers,
+          response.data,
+          result,
+        );
+        result = returnResult;
+        if (returnStatus != GetResultStatus.Success) {
+          status = WorkStatus.Interrupted;
+          return null;
         }
         return element.transfer(response.headers, response.data, result);
       } else {

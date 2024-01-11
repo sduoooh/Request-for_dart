@@ -50,31 +50,6 @@ class _Request {
     dynamic postData = data;
     options.method = type == RequestType.Get ? 'GET' : 'POST';
     options.headers['Host'] = host;
-
-    // Set<(String, String)> keys = {('NULLKEY', 'NULLVALUE')};
-    // Map<String, List<(String, String)>> results = {};
-
-    // requestCookies = requestCookies ?? [];
-    // requestCookies.forEach((element) {
-    //   var (_, result) = cookies.get(host, path: path);
-    //   keys.addAll(result.$1);
-    //   results.addAll(result.$2);
-    // });
-
-    // if (keys.containsAll(requestCookies)) {
-    //   var cookieString = '';
-    //   (requestCookies).forEach((e) {
-    //     results[e]!.forEach((element) {
-    //       cookieString += e + '=' + element.$2 + ';';
-    //     });
-    //   });
-    //   if (cookieString.length > 0) {
-    //     options.headers['Cookie'] = cookieString;
-    //   }
-    // } else {
-    //   return Future<IO<response>>.value(
-    //       (IOStatus.CookieError, response(0, {}, '')));
-    // }
     if (type == RequestType.Post) {
       if (data == null)
         return Future<IO<response>>.value(
@@ -105,11 +80,9 @@ class _Request {
           return handler.next(options);
         },
         onResponse: (Response response, ResponseInterceptorHandler handler) {
-          // 如果你想终止请求并触发一个错误，你可以使用 `handler.reject(error)`。
           return handler.next(response);
         },
         onError: (DioException error, ErrorInterceptorHandler handler) {
-          // 如果你想完成请求并返回一些自定义数据，你可以使用 `handler.resolve(response)`。
           return handler.next(error);
         },
       ),
@@ -118,18 +91,6 @@ class _Request {
     dio.interceptors.add(cookies);
     var getResponse = await dio.request(path, data: postData);
     if ([2, 3, 4].contains(((getResponse.statusCode ?? 0) / 100).floor())) {
-      // if (getResponse.headers.map.containsKey('set-cookie')) {
-      //   var cookie = getResponse.headers.map['set-cookie'];
-      //   cookie!.forEach((element) {
-      //     var info = element.split(';');
-      //     var path =
-      //         info.indexWhere((element) => element.startsWith('path'), 1);
-
-      //     cookies.add(info[0].split('=')[0], info[0].split('=')[1], host,
-      //         double.maxFinite.toInt(),
-      //         path: (path == -1) ? '/' : info[path].split('=')[1]);
-      //   });
-      // }
       return Future<IO<response>>.value((
         IOStatus.Success,
         response(getResponse.statusCode ?? 0, getResponse.headers.map,
@@ -157,7 +118,6 @@ class Request {
     RequestType type, {
     Map<String, dynamic>? data,
     PostDataType? postDataType,
-    //List<String>? requestCookies,
     Map<String, String>? headers,
   }) async {
     if (!_requests.containsKey(host)) {
@@ -168,7 +128,6 @@ class Request {
       type,
       data: data,
       postDataType: postDataType,
-      //requestCookies: requestCookies,
       headers: headers,
     ));
   }
