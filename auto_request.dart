@@ -28,7 +28,6 @@ class AutoWorkParams {
   RequestType type;
   Map<String, String>? data;
   PostDataType? postDataType;
-  //List<String>? requestCookies;
   Map<String, String>? headers;
 
   // 必要的传递配置
